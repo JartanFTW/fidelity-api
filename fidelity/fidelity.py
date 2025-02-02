@@ -112,7 +112,8 @@ class FidelityAutomation:
         )
 
         self.context = self.browser.new_context(
-            storage_state=self.profile_path if self.title is not None else None
+            # If we want to save cookies and session data, set a path, else set to None
+            storage_state=self.profile_path if self.save_state else None
         )
 
         # Take screenshots on actions
