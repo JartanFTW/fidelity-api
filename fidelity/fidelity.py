@@ -765,7 +765,7 @@ class FidelityAutomation:
 
         return unique_stocks
 
-    def transaction(self, stock: str, quantity: float, action: str, account: str, dry: bool = True) -> bool:
+    def transaction(self, stock: str, quantity: float, action: str, account: str, dry: bool = True, limit_price: float = None) -> bool:
         """
         Process an order (transaction) using the dedicated trading page. Support extended hour trading.
 
@@ -856,9 +856,12 @@ class FidelityAutomation:
             self.page.get_by_text("Quantity", exact=True).fill(str(quantity))
 
             # If it should be limit
-            if float(last_price) < 1 or extended:
+            if float(last_price) < 1 or extended or limit_price is not None:
+                # Set if present
+                if limit_price is not None:
+                    wanted_price = limit_price
                 # Buy above
-                if action.lower() == "buy":
+                elif action.lower() == "buy":
                     difference_price = 0.01 if float(last_price) > 0.1 else 0.0001
                     wanted_price = round(float(last_price) + difference_price, precision)
                 # Sell below
