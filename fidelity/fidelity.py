@@ -1228,47 +1228,116 @@ class FidelityAutomation:
             print(f"Error: {e}")
             return False
     
-    def download_prev_statement(self, date: str):
+    def download_statements(self, date: str):
         """
-        Downloads the multi-account statement for the given month.
-        TODO: feature that goes to certain year or period if given date is more than 6 months before current date
-        TODO: ranges of date matching. Fidelity sometimes combines statements of months. Ex: Jan - April
+        Downloads the account statement(s) for the given month.
 
         Parameters
         ----------
         date (str)
-            The month and year for the statement to download. Format of `MM/YYYY`
+            The month and year for the statement to download. Format of `YYYY/MM`  Ex: 2019/01
         
         Returns
         -------
-        statement (str)
-            The full path of the file downloaded
+        saved_files (str)
+            A list of absolute file paths to statements downloaded. If error occured, return None
         """
 
         # Trim date down
-        month = date[:2]
-        year = date[-4:]
+        target_month = date[-2:]
+        target_year = date[:4]
+        if not target_month.isdigit() or not target_year.isdigit():
+            return None
+        target_month = int(target_month)
+        target_year = int(target_year)
 
-        # Convert to month
-        month = fid_months(int(month)).name
+        # Convert to target_month string
+        fid_month = fid_months(target_month).name
 
         # Build statement name string
-        beginning = str(month) + " " + year
-        # Convert to 3 letter month followed by year
+        beginning = str(fid_month) + " " + str(target_year)
+
+        # Go to url
         self.page.wait_for_load_state(state="load")
         self.page.goto(url="https://digital.fidelity.com/ftgw/digital/portfolio/documents/dochub")
-        self.page.get_by_role("row", name=f"{beginning} — Statement (pdf)").get_by_label("download statement").click()
-        with self.page.expect_download() as download_info:
-            with self.page.expect_popup() as page1_info:
-                self.page.get_by_role("menuitem", name="Download as PDF").click()
-            page1 = page1_info.value
-        download = download_info.value
-        cur = os.getcwd()
-        statement = os.path.join(cur, download.suggested_filename)
-        # Create a copy to work on with the proper file name known
-        download.save_as(statement)
-        page1.close()
-        return statement
+
+        # Select the proper year
+        # Selete the date change button
+        self.page.get_by_role("button", name="Changing").click()
+
+        # Choose the corrisponding year
+        self.page.get_by_role("menuitem", name=f"{str(target_year)}").click()
+
+        # Wait for entries to load
+        self.page.locator("statements-loading-skeleton div").nth(1).wait_for(state="hidden")
+
+        # Wait for annoying beneficiary page to show its ugly face
+        try:
+            self.page.locator(".pvd3-cim-modal-root > .pvd-modal__overlay").wait_for(timeout=2000)
+            self.page.get_by_role("button", name="Close dialog").click()
+        except PlaywrightTimeoutError:
+            pass
+
+        # expand results or end if no results
+        if self.page.get_by_text("There are no statements").is_visible():
+            return None
+
+        # If statement is not showing, expand if possible
+        elif self.page.get_by_role("button", name="Load more results").is_visible():
+            self.page.get_by_role("button", name="Load more results").click()
+
+        # If everything is showing, continue
+        elif not self.page.get_by_text("Showing all results").is_visible():
+            return None
+
+        # Get list of elements
+        items = self.page.get_by_role("row").all()
+        valid_rows = []
+        for item in items:
+            text = item.inner_text()
+            # Double check that text contains target_year
+            if not re.search(str(target_year), text):
+                continue
+            # If we find a direct match, add to valid rows and continue
+            if re.search(fid_month, text):
+                valid_rows.append(item)
+                continue
+
+            # Otherwise, do more processing
+            found_months = []
+            for month in fid_months.__members__.keys():
+                if len(found_months) >= 2:
+                    break
+                result = re.search(str(month), text)
+                if result:
+                    found_months.append(month)
+
+            # If, for whatever reason, we didn't find 2 months, just go to the next item
+            if len(found_months) != 2:
+                continue
+            # Determine if target date is in this statement period
+            if fid_months[found_months[0]].value <= target_month and target_month <= fid_months[found_months[1]].value:
+                valid_rows.append(item)
+
+        saved_files = []
+        for row in valid_rows:
+            # Download matches
+            with self.page.expect_download() as download_info:
+                with self.page.expect_popup() as page1_info:
+                    row.filter(has=self.page.get_by_role("link")).click()
+                page1 = page1_info.value
+            download = download_info.value
+            filename = f"./Statements/{str(len(saved_files))} - {download.suggested_filename}"
+            if not os.path.exists(os.path.dirname(filename)):
+                os.makedirs(os.path.dirname(filename), exist_ok=True)
+            cur = os.getcwd()
+            filename = os.path.join(cur, filename)
+            # Create a copy to work on with the proper file name known
+            download.save_as(filename)
+            page1.close()
+            saved_files.append(filename)
+        # return a list of filenames
+        return saved_files
 
     def wait_for_loading_sign(self, timeout: int = 30000):
         """
