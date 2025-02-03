@@ -1243,7 +1243,7 @@ class FidelityAutomation:
         Returns
         -------
         saved_files (str)
-            A list of absolute file paths to statements downloaded. If error occurred, return None
+            A list of absolute file paths to statements downloaded. If error occured, return None
         """
 
         # Trim date down
@@ -1265,10 +1265,10 @@ class FidelityAutomation:
         self.page.goto(url="https://digital.fidelity.com/ftgw/digital/portfolio/documents/dochub")
 
         # Select the proper year
-        # Select the date change button
+        # Selete the date change button
         self.page.get_by_role("button", name="Changing").click()
 
-        # Choose the corresponding year
+        # Choose the corrisponding year
         self.page.get_by_role("menuitem", name=f"{str(target_year)}").click()
 
         # Wait for entries to load
@@ -1323,6 +1323,10 @@ class FidelityAutomation:
                 valid_rows.append(item)
 
         saved_files = []
+        # Determine sub folder name if necessary
+        subfolder = ""
+        if self.title is not None:
+            subfolder = self.title + '/'
         for row in valid_rows:
             # Download matches
             with self.page.expect_download() as download_info:
@@ -1330,7 +1334,7 @@ class FidelityAutomation:
                     row.filter(has=self.page.get_by_role("link")).click()
                 page1 = page1_info.value
             download = download_info.value
-            filename = f"./Statements/{str(len(saved_files))} - {download.suggested_filename}"
+            filename = f"./Statements/{subfolder}{str(len(saved_files))} - {download.suggested_filename}"
             if not os.path.exists(os.path.dirname(filename)):
                 os.makedirs(os.path.dirname(filename), exist_ok=True)
             cur = os.getcwd()
