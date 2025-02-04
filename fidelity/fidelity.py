@@ -1207,7 +1207,7 @@ class FidelityAutomation:
                 # self.page.wait_for_url(url="https://digital.fidelity.com/ftgw/digital/easy/hrt/pst/termsandconditions")
                 # TODO This is the page that it navigates to after the checkbox version
                 # https://digital.fidelity.com/ftgw/digital/brokerage-host/psta/TermsAndCondtions
-                # Also the page doesnt say success if it goes here. it says You're all set!. See pic in downloads
+                # Also the page doesn't say success if it goes here. it says You're all set!. See pic in downloads
             except PlaywrightTimeoutError as e:
                 if not "termsandconditions" in self.page.url.lower():
                     raise Exception(e)
@@ -1243,7 +1243,7 @@ class FidelityAutomation:
         Returns
         -------
         saved_files (str)
-            A list of absolute file paths to statements downloaded. If error occured, return None
+            A list of absolute file paths to statements downloaded. If error occurred, return None
         """
 
         # Trim date down
@@ -1265,10 +1265,10 @@ class FidelityAutomation:
         self.page.goto(url="https://digital.fidelity.com/ftgw/digital/portfolio/documents/dochub")
 
         # Select the proper year
-        # Selete the date change button
+        # Select the date change button
         self.page.get_by_role("button", name="Changing").click()
 
-        # Choose the corrisponding year
+        # Choose the corresponding year
         self.page.get_by_role("menuitem", name=f"{str(target_year)}").click()
 
         # Wait for entries to load
