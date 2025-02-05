@@ -1257,8 +1257,11 @@ class FidelityAutomation:
         # Convert to target_month string
         fid_month = fid_months(target_month).name
 
-        # Build statement name string
-        beginning = str(fid_month) + " " + str(target_year)
+        # Setup popup handler
+        self.page.add_locator_handler(
+            self.page.locator(".pvd3-cim-modal-root > .pvd-modal__overlay"),
+            self.beneficiary_popup_close,
+        )
 
         # Go to url
         self.page.wait_for_load_state(state="load")
@@ -1266,20 +1269,13 @@ class FidelityAutomation:
 
         # Select the proper year
         # Select the date change button
-        self.page.get_by_role("button", name="Changing").click()
+        self.page.get_by_role("button", name="Changing").click(timeout=5000)
 
         # Choose the corresponding year
-        self.page.get_by_role("menuitem", name=f"{str(target_year)}").click()
+        self.page.get_by_role("menuitem", name=f"{str(target_year)}").click(timeout=5000)
 
         # Wait for entries to load
         self.page.locator("statements-loading-skeleton div").nth(1).wait_for(state="hidden")
-
-        # Wait for annoying beneficiary page to show its ugly face
-        try:
-            self.page.locator(".pvd3-cim-modal-root > .pvd-modal__overlay").wait_for(timeout=2000)
-            self.page.get_by_role("button", name="Close dialog").click()
-        except PlaywrightTimeoutError:
-            pass
 
         # expand results or end if no results
         if self.page.get_by_text("There are no statements").is_visible():
@@ -1287,7 +1283,7 @@ class FidelityAutomation:
 
         # If statement is not showing, expand if possible
         elif self.page.get_by_role("button", name="Load more results").is_visible():
-            self.page.get_by_role("button", name="Load more results").click()
+            self.page.get_by_role("button", name="Load more results").click(timeout=5000)
 
         # If everything is showing, continue
         elif not self.page.get_by_text("Showing all results").is_visible():
@@ -1331,7 +1327,7 @@ class FidelityAutomation:
             # Download matches
             with self.page.expect_download() as download_info:
                 with self.page.expect_popup() as page1_info:
-                    row.filter(has=self.page.get_by_role("link")).click()
+                    row.filter(has=self.page.get_by_role("link")).click(timeout=5000)
                 page1 = page1_info.value
             download = download_info.value
             filename = f"./Statements/{subfolder}{str(len(saved_files))} - {download.suggested_filename}"
@@ -1437,7 +1433,8 @@ class FidelityAutomation:
             print(e)
             return False
 
-
+    def beneficiary_popup_close(self):
+        self.page.get_by_role("button", name="Close dialog").click()
 
 def create_stock_dict(ticker: str, quantity: float, last_price: float, value: float, stock_list: list = None):
     """
