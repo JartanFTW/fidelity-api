@@ -1257,10 +1257,14 @@ class FidelityAutomation:
         # Convert to target_month string
         fid_month = fid_months(target_month).name
 
+        def beneficiary_popup_close():
+            self.page.get_by_role("button", name="Close dialog").click()
+            return True
+
         # Setup popup handler
         self.page.add_locator_handler(
             self.page.locator(".pvd3-cim-modal-root > .pvd-modal__overlay"),
-            self.beneficiary_popup_close,
+            beneficiary_popup_close,
         )
 
         # Go to url
@@ -1432,9 +1436,6 @@ class FidelityAutomation:
         except Exception as e:
             print(e)
             return False
-
-    def beneficiary_popup_close(self):
-        self.page.get_by_role("button", name="Close dialog").click()
 
 def create_stock_dict(ticker: str, quantity: float, last_price: float, value: float, stock_list: list = None):
     """
