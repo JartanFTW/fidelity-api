@@ -1298,6 +1298,8 @@ class FidelityAutomation:
             return None
 
         # Get list of elements
+        # Wait for entries to load and filter themselves out
+        self.page.wait_for_timeout(1000)
         items = self.page.get_by_role("row").all()
         valid_rows = []
         for item in items:
