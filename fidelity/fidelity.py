@@ -1287,7 +1287,11 @@ class FidelityAutomation:
 
         # If statement is not showing, expand if possible
         elif self.page.get_by_role("button", name="Load more results").is_visible():
-            self.page.get_by_role("button", name="Load more results").click(timeout=5000)
+            try:
+                self.page.get_by_role("button", name="Load more results").click(timeout=5000)
+            except PlaywrightTimeoutError:
+                if not self.page.get_by_text("Showing all results").is_visible():
+                    return None
 
         # If everything is showing, continue
         elif not self.page.get_by_text("Showing all results").is_visible():
